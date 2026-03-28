@@ -9,6 +9,8 @@ import * as lancedb from "@lancedb/lancedb";
 import * as arrow from "apache-arrow";
 import fs from "fs/promises";
 import pLimit from "p-limit";
+import path from "path";
+import { bold } from "@visulima/colorize/browser";
 
 const PARSER = new LiteParse();
 const SCREENSHOT_DIR = "screenshots";
@@ -33,6 +35,11 @@ async function parseAndChunk(filePath: string): Promise<Map<number, string[]>> {
   for (const r of result.pages) {
     const chunks = await chunker.chunk(r.text);
     const texts = chunks.map((c) => c.text);
+    console.log(
+      bold(
+        `Produced ${texts.length} chunks from page ${r.pageNum} of ${filePath}`,
+      ),
+    );
     pages.set(r.pageNum, texts);
   }
 
@@ -51,10 +58,15 @@ async function screenshot(
   },
 ): Promise<Array<ProcessedPage>> {
   const outputDir = outDir ?? SCREENSHOT_DIR;
+  await fs.mkdir(outputDir, {
+    recursive: true,
+  });
   const result = await PARSER.screenshot(filePath);
+  console.log(bold(`Finished parsing file ${filePath}`));
   const processed: Array<ProcessedPage> = [];
   for (const r of result) {
-    const imagePath = `${outputDir}/${filePath}_page_${r.pageNum}.${SCREENSHOT_FORMAT}`;
+    const ext = path.extname(filePath);
+    const imagePath = `${outputDir}/${path.basename(filePath, ext)}_page_${r.pageNum}.${SCREENSHOT_FORMAT}`;
     if (existsSync(imagePath) && !overwrite) {
       throw new Error(
         `Cannot write to an existing path (${imagePath}) if overwrite is set to false.`,
@@ -151,7 +163,7 @@ async function upsertData(
     const embedding = embeddings[i]!;
     const d = {
       id: page.screenshotPath,
-      screenshotPath: page.screenshotPath,
+      screenshot_path: page.screenshotPath,
       vector: embedding,
       text: page.text,
     };
@@ -188,6 +200,8 @@ export async function pipeline(
     overwrite: overwriteScreenshots,
   });
   const embeddings = await embed(pages);
+  console.log(bold(`Created ${embeddings.length} embeddings`));
   const db = await connectDb();
   await upsertData(db, pages, embeddings);
+  console.log(bold("Finished upserting data to the `.lancedb` folder"));
 }

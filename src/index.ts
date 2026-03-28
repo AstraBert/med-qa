@@ -6,7 +6,12 @@ import { bold, green, red, yellow } from "@visulima/colorize";
 
 const program = new Command();
 
-program.name("medqa").description("Local semantic search CLI").version("0.1.0");
+program
+  .name("medqa")
+  .description(
+    "Local agentic search for medical factsheets. Powered by LiteParse and LanceDB.",
+  )
+  .version("0.1.0");
 
 program
   .command("process <file>")

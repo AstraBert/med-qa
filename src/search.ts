@@ -42,7 +42,7 @@ async function tableSearch(
   const searchResults = [];
   for (const result of results) {
     const text = result.text as string;
-    const path = result.screenshotPath as string;
+    const path = result.screenshot_path as string;
     const searchResult: SearchResult = { screenshotPath: path, text };
     searchResults.push(searchResult);
   }

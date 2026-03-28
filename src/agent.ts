@@ -118,7 +118,7 @@ export const queryOptions: Options = {
   permissionMode: "default",
   systemPrompt: systemPrompt,
   mcpServers: {
-    filesystem: retrievalMcp,
+    retrieval: retrievalMcp,
   },
   thinking: {
     type: "enabled",
