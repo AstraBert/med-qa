@@ -4,6 +4,7 @@ Processing logic (parsing/screenshotting, embedding, ingestion)
 import { LiteParse } from "@llamaindex/liteparse";
 import { GoogleGenAI, type ContentEmbedding } from "@google/genai";
 import { existsSync } from "fs";
+import { RecursiveChunker } from "@chonkiejs/core";
 import * as lancedb from "@lancedb/lancedb";
 import * as arrow from "apache-arrow";
 import fs from "fs/promises";
@@ -23,11 +24,16 @@ type ProcessedPage = {
   screenshotPath: string;
 };
 
-async function parse(filePath: string): Promise<Map<number, string>> {
+async function parseAndChunk(filePath: string): Promise<Map<number, string[]>> {
   const result = await PARSER.parse(filePath);
-  const pages: Map<number, string> = new Map();
+  const chunker = await RecursiveChunker.create({
+    chunkSize: 8192,
+  });
+  const pages: Map<number, string[]> = new Map();
   for (const r of result.pages) {
-    pages.set(r.pageNum, r.text);
+    const chunks = await chunker.chunk(r.text);
+    const texts = chunks.map((c) => c.text);
+    pages.set(r.pageNum, texts);
   }
 
   return pages;
@@ -35,7 +41,7 @@ async function parse(filePath: string): Promise<Map<number, string>> {
 
 async function screenshot(
   filePath: string,
-  texts: Map<number, string>,
+  texts: Map<number, string[]>,
   {
     outDir = undefined,
     overwrite = false,
@@ -56,11 +62,14 @@ async function screenshot(
     } else {
       await fs.writeFile(imagePath, r.imageBuffer);
     }
-    processed.push({
-      pageNumber: r.pageNum,
-      text: texts.get(r.pageNum)!, // unwrap error if not there
-      screenshotPath: imagePath,
-    });
+    const txts = texts.get(r.pageNum) ?? [];
+    for (const txt of txts) {
+      processed.push({
+        pageNumber: r.pageNum,
+        text: txt,
+        screenshotPath: imagePath,
+      });
+    }
   }
 
   return processed;
@@ -188,7 +197,7 @@ export async function pipeline(
     lancedbUri?: string | undefined;
   },
 ): Promise<void> {
-  const texts = await parse(filePath);
+  const texts = await parseAndChunk(filePath);
   const pages = await screenshot(filePath, texts, {
     outDir: screenshotDir,
     overwrite: overwriteScreenshots,

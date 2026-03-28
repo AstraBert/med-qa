@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@chonkiejs/core": "^0.0.9",
     "@google/genai": "^1.47.0",
     "@lancedb/lancedb": "^0.27.1",
     "@llamaindex/liteparse": "^1.4.1",
