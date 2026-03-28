@@ -6,10 +6,20 @@
   "scripts": {
     "process": "bun run src/index.ts process",
     "search": "bun run src/index.ts search",
-    "agent": "bun run src/index.ts agent"
+    "agent": "bun run src/index.ts agent",
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "latest",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0",
+    "jiti": "^2.6.1",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.57.2"
   },
   "peerDependencies": {
     "typescript": "^5"

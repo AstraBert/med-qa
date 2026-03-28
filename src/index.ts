@@ -1,4 +1,4 @@
-import { Command, Option } from "commander";
+import { Command } from "commander";
 import { pipeline } from "./processing";
 import { search } from "./search";
 import { Agent, queryOptions } from "./agent";
