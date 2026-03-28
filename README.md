@@ -2,7 +2,7 @@
 
 A local CLI for ingesting, searching, and querying medical factsheets using vector embeddings and an AI-backed agent.
 
-Documents are parsed and converted to page-level screenshots, chunked by [LiteParse](https://github.com/run-llama/liteparse), embedded with [Google's Gemini embedding model](https://ai.google.dev/gemini-api/docs/embeddings#multimodal), and stored in a local [LanceDB](https://lancedb.com) vector database. A Claude-backed agent can then answer questions against this knowledge base using a two-step retrieval strategy: text search first, with optional image lookup for visual context grounding if the text-base information is insufficient or ambiguous.
+Documents are parsed and converted to page-level screenshots by [LiteParse](https://github.com/run-llama/liteparse), chunked with [Chonkie](https://chonkie.ai), embedded with [Google's Gemini embedding model](https://ai.google.dev/gemini-api/docs/embeddings#multimodal), and stored in a local [LanceDB](https://lancedb.com) vector database. A [Claude](https://platform.claude.com/docs/en/agent-sdk/overview)-backed agent can then answer questions against this knowledge base using a two-step retrieval strategy: text search first, with optional image lookup for visual context grounding if the text-base information is insufficient or ambiguous.
 
 ## Requirements
 
