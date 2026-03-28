@@ -26,11 +26,10 @@ async function embedQuery(query: string): Promise<Array<number>> {
 }
 
 async function tableSearch(
-  uri: string | undefined,
   embedding: Array<number>,
   limit: number | undefined,
 ): Promise<Array<SearchResult>> {
-  const db = await connectDb({ uri: uri });
+  const db = await connectDb();
   const exists = await tableExists(db);
   if (!exists) {
     throw new Error("Table does not exist, cannot search yet");
@@ -53,14 +52,12 @@ async function tableSearch(
 export async function search(
   query: string,
   {
-    lancedbUri = undefined,
     limit = undefined,
   }: {
-    lancedbUri?: string | undefined;
     limit?: number | undefined;
   },
 ): Promise<Array<SearchResult>> {
   const embedding = await embedQuery(query);
-  const results = await tableSearch(lancedbUri, embedding, limit);
+  const results = await tableSearch(embedding, limit);
   return results;
 }

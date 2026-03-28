@@ -10,11 +10,14 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.86",
     "@chonkiejs/core": "^0.0.9",
     "@google/genai": "^1.47.0",
     "@lancedb/lancedb": "^0.27.1",
     "@llamaindex/liteparse": "^1.4.1",
+    "@visulima/colorize": "^1.4.29",
     "apache-arrow": "^21.1.0",
+    "commander": "^14.0.3",
     "p-limit": "^7.3.0"
   }
 }

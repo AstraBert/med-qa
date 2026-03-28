@@ -27,7 +27,7 @@ type ProcessedPage = {
 async function parseAndChunk(filePath: string): Promise<Map<number, string[]>> {
   const result = await PARSER.parse(filePath);
   const chunker = await RecursiveChunker.create({
-    chunkSize: 8192,
+    chunkSize: 4096,
   });
   const pages: Map<number, string[]> = new Map();
   for (const r of result.pages) {
@@ -96,20 +96,11 @@ export function unwrapEmbeddings(
 }
 
 async function embedOne(page: ProcessedPage): Promise<Array<number>> {
-  const imgBase64 = await fs.readFile(page.screenshotPath, {
-    encoding: "base64",
-  });
-
   const ai = new GoogleGenAI({});
   const response = await ai.models.embedContent({
     model: EMBEDDING_MODEL,
-    contents: {
-      parts: [
-        { text: page.text },
-        { inlineData: { mimeType: "image/png", data: imgBase64 } },
-      ],
-    },
-  }); // generates 1 aggregated embedding
+    contents: [page.text],
+  });
 
   return unwrapEmbeddings(response.embeddings);
 }
@@ -126,12 +117,8 @@ async function embed(
   return result;
 }
 
-export async function connectDb({
-  uri = undefined,
-}: {
-  uri?: string | undefined;
-}): Promise<lancedb.Connection> {
-  const connectUri = uri ?? LANCEDB_URI;
+export async function connectDb(): Promise<lancedb.Connection> {
+  const connectUri = LANCEDB_URI;
   const db = await lancedb.connect(connectUri);
   return db;
 }
@@ -190,11 +177,9 @@ export async function pipeline(
   {
     screenshotDir = undefined,
     overwriteScreenshots = undefined,
-    lancedbUri = undefined,
   }: {
     screenshotDir?: string | undefined;
     overwriteScreenshots?: boolean | undefined;
-    lancedbUri?: string | undefined;
   },
 ): Promise<void> {
   const texts = await parseAndChunk(filePath);
@@ -203,6 +188,6 @@ export async function pipeline(
     overwrite: overwriteScreenshots,
   });
   const embeddings = await embed(pages);
-  const db = await connectDb({ uri: lancedbUri });
+  const db = await connectDb();
   await upsertData(db, pages, embeddings);
 }
