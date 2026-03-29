@@ -9,6 +9,13 @@ import {
 } from "@visulima/colorize";
 import { retrievalMcp } from "./mcp";
 
+function truncateText(text: string): string {
+  if (text.length > 100) {
+    return text.slice(0, 100) + "...";
+  }
+  return text;
+}
+
 export class Agent {
   options: Options;
 
@@ -59,9 +66,9 @@ export class Agent {
               if (block.content) {
                 for (const b of block.content) {
                   if (typeof b === "string") {
-                    console.log(b);
+                    console.log(truncateText(b));
                   } else if (b.type == "text") {
-                    console.log(b.text);
+                    console.log(truncateText(b.text));
                   }
                 }
               }
