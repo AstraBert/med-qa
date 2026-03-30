@@ -94,9 +94,9 @@ To resume a session:
 bun run agent "Follow-up question" --resume <session-id>
 ```
 
-### Eval
+### Evaluation
 
-Run the evaluation suite against mock answer banks to gauge scoring accuracy:
+Run the evaluation suite. Each question is sent to the agent, and the response is scored against expected answers. Tool usage (search and image calls) is tracked per question.
 
 ```bash
 bun run eval
@@ -104,23 +104,20 @@ bun run eval
 
 Options:
 
-| Flag                        | Description                                              |
-| --------------------------- | -------------------------------------------------------- |
-| `--mock <mode>`             | Mock answer bank to use: `perfect` or `wrong`. Defaults to `perfect`. |
-| `--category <category>`     | Filter questions by category.                            |
-| `--difficulty <difficulty>` | Filter questions by difficulty.                          |
-| `--output <path>`           | Save results to a JSON file.                             |
-| `--quiet`                   | Suppress per-question output.                            |
+| Flag                    | Description                    |
+| ----------------------- | ------------------------------ |
+| `--category <category>` | Filter questions by category.  |
+| `--output <path>`       | Save results to a JSON file.   |
+| `--quiet`               | Suppress per-question output.  |
 
 Example:
 
 ```bash
-bun run eval --mock perfect
-bun run eval --mock wrong --category synonym_paraphrase
-bun run eval --mock perfect --output results.json
+bun run eval --output results.json
+bun run eval --category aggregation_counting
 ```
 
-The eval suite uses 20 questions from `evals/medication_eval.json` across 7 categories (`direct_lookup`, `synonym_paraphrase`, `brand_generic_resolution`, `cross_category_reasoning`, `negation_absence`, `aggregation_counting`, `disambiguation`) and 3 difficulty levels. Answers are scored with type-specific strategies: set F1 (with alias resolution), exact match, boolean, numeric, and free-text via Claude Sonnet as LLM judge (falls back to word-overlap heuristic if no `ANTHROPIC_API_KEY` is set).
+The eval suite uses 20 questions from `src/eval/gold.json` across 7 categories (`direct_lookup`, `synonym_paraphrase`, `brand_generic_resolution`, `cross_category_reasoning`, `negation_absence`, `aggregation_counting`, `disambiguation`). Answers are scored with type-specific strategies: set F1 (with alias resolution), exact match, boolean, numeric, and free-text via Claude Sonnet as LLM judge. Per-question output includes tool call counts and flags questions where the agent used the image fallback tool (`[img]`).
 
 ## How it works
 

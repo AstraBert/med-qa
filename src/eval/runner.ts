@@ -1,118 +1,86 @@
 import { readFile, writeFile } from "fs/promises";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { bold, green, yellow, red } from "@visulima/colorize";
+import { bold, green, yellow, red, cyan } from "@visulima/colorize";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 import { scoreQuestion } from "./score";
-import type { EvalQuestion, EvalResult, EvalSummary } from "./types";
+import { createQueryOptions } from "../agent";
+import type { EvalQuestion, EvalResult, EvalSummary, ToolStats } from "./types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const EVAL_PATH = resolve(__dirname, "../../evals/medication_eval.json");
+const EVAL_PATH = resolve(__dirname, "gold.json");
 
 // ---------------------------------------------------------------------------
-// Mock answer banks (for sanity-checking the scorer)
+// Structured output format instructions appended to each agent prompt
 // ---------------------------------------------------------------------------
 
-const PERFECT_ANSWERS: Record<string, unknown> = {
-  "DL-01": [
-    "Constipation",
-    "Diarrhea",
-    "Headache",
-    "Throwing up",
-    "Upset stomach",
-  ],
-  "DL-02": "Blood Thinner/Blood Clot Treatment",
-  "DL-03": ["Amiodarone", "Digoxin", "Propranalol"],
-  "SYN-01": ["Ondansetron", "Promethazine", "Scopolamine"],
-  "SYN-02": [
-    "Benzapril",
-    "Captopril",
-    "Enalapril",
-    "Lisinopril",
-    "Quinapril",
-    "Ramipril",
-    "Candesartan",
-    "Irbesartan",
-    "Olmesartan",
-    "Valsartan",
-    "Losartan",
-    "Furosemide",
-    "Hydrochlorothiazide",
-    "Spironolactone",
-  ],
-  "SYN-03": false,
-  "SYN-04": [
-    "Constipation",
-    "Diarrhea",
-    "Headache",
-    "Throwing up",
-    "Upset stomach",
-  ],
-  "BG-01": "Calms Nerves or Makes You Sleepy",
-  "BG-02": false,
-  "BG-03": "No brand name listed",
-  "XC-01": ["Constipation", "Throwing up"],
-  "XC-02": ["Dizziness"],
-  "XC-03": ["Upset stomach"],
-  "NA-01": [],
-  "NA-02": false,
-  "NA-03": false,
-  "AG-01": ["Headache", "Upset stomach"],
-  "AG-02": 14,
-  "DIS-01":
-    "Both. 'Queasiness or Throwing Up' is a category/reason for medicine " +
-    "(treated with Ondansetron, Promethazine, Scopolamine), AND 'Queasiness' " +
-    "appears as a side effect of Pain Relief medications.",
-  "DIS-02": ["Ondansetron", "Promethazine", "Scopolamine"],
+const FORMAT_INSTRUCTIONS: Record<string, string> = {
+  set: '\n\nIMPORTANT: Respond with ONLY a JSON array of strings. Example: ["item1", "item2"]. If the answer is an empty set, return []. No explanation, no markdown — just the JSON array.',
+  boolean:
+    "\n\nIMPORTANT: Respond with ONLY the word true or false. No explanation, no markdown — just the boolean.",
+  number:
+    "\n\nIMPORTANT: Respond with ONLY a single number. No explanation, no markdown — just the number.",
+  exact_match:
+    "\n\nIMPORTANT: Respond with ONLY the answer as a short string. No explanation, no markdown.",
+  free_text:
+    "\n\nIMPORTANT: Respond with ONLY the direct answer in one sentence. No markdown, no emojis, no elaboration.",
 };
 
-const WRONG_ANSWERS: Record<string, unknown> = {
-  "DL-01": ["Headache"],
-  "DL-02": "Pain Relief",
-  "DL-03": ["Amiodarone"],
-  "SYN-01": ["Ibuprofen"],
-  "SYN-02": ["Metoprolol", "Atenolol"],
-  "SYN-03": true,
-  "SYN-04": ["Dizziness", "Drowsiness"],
-  "BG-01": "Pain Relief",
-  "BG-02": true,
-  "BG-03": "MS Contin",
-  "XC-01": ["Headache", "Dizziness"],
-  "XC-02": ["Headache", "Constipation"],
-  "XC-03": ["Dizziness"],
-  "NA-01": ["Acetaminophen", "Tramadol"],
-  "NA-02": true,
-  "NA-03": true,
-  "AG-01": ["Dizziness"],
-  "AG-02": 4,
-  "DIS-01": "It is a side effect only.",
-  "DIS-02": ["Acetaminophen", "Tramadol", "Morphine"],
-};
+// ---------------------------------------------------------------------------
+// Run a single question through the agent and track tool usage
+// ---------------------------------------------------------------------------
 
-export function getMockAnswers(
-  mode: "perfect" | "wrong",
-): Record<string, unknown> {
-  return mode === "perfect" ? PERFECT_ANSWERS : WRONG_ANSWERS;
+async function askAgent(
+  question: string,
+  answerType: string,
+): Promise<{ answer: string; toolStats: ToolStats }> {
+  const stats: ToolStats = {
+    search_calls: 0,
+    get_image_calls: 0,
+  };
+  let finalResult = "";
+  const formatSuffix = FORMAT_INSTRUCTIONS[answerType] ?? "";
+
+  for await (const message of query({
+    prompt: question + formatSuffix,
+    options: createQueryOptions(),
+  })) {
+    if (message.type === "assistant") {
+      for (const block of message.message.content) {
+        if (block.type === "tool_use") {
+          if (block.name === "mcp__retrieval__search") {
+            stats.search_calls++;
+          } else if (block.name === "mcp__retrieval__get_image") {
+            stats.get_image_calls++;
+          }
+        }
+      }
+    } else if (message.type === "result" && message.subtype === "success") {
+      finalResult = message.result;
+    }
+  }
+
+  return { answer: finalResult, toolStats: stats };
 }
 
+// ---------------------------------------------------------------------------
+// Main eval runner
+// ---------------------------------------------------------------------------
+
 export async function runEval(
-  answers: Record<string, unknown>,
   options: {
     category?: string;
-    difficulty?: string;
     verbose?: boolean;
     output?: string;
   } = {},
 ): Promise<EvalSummary> {
-  const { category, difficulty, verbose = true, output } = options;
+  const { category, verbose = true, output } = options;
 
   const raw = await readFile(EVAL_PATH, "utf-8");
   let questions: EvalQuestion[] = JSON.parse(raw);
 
   if (category) {
     questions = questions.filter((q) => q.category === category);
-  }
-  if (difficulty) {
-    questions = questions.filter((q) => q.difficulty === difficulty);
   }
 
   if (questions.length === 0) {
@@ -121,50 +89,60 @@ export async function runEval(
       total_questions: 0,
       overall_score: 0,
       by_category: {},
-      by_difficulty: {},
       results: [],
     };
   }
 
-  const results: EvalResult[] = await Promise.all(
+  let completed = 0;
+  const total = questions.length;
+
+  const results: EvalResult[] = (await Promise.all(
     questions.map(async (q) => {
-      const answer = answers[q.id] ?? "I don't know";
+      const { answer, toolStats } = await askAgent(q.question, q.answer_type);
       const result = await scoreQuestion(q, answer);
+      completed++;
+      if (verbose) {
+        process.stdout.write(`\r  Running… ${completed}/${total} complete`);
+      }
       return {
         id: q.id,
         category: q.category,
-        difficulty: q.difficulty,
         question: q.question,
         expected: q.expected_answer,
         actual: answer,
         score: result.score,
         details: result.details,
+        tool_stats: toolStats,
       };
     }),
-  );
+  )).sort((a, b) => a.id.localeCompare(b.id));
 
-  const categoryScores = new Map<string, number[]>();
-  const difficultyScores = new Map<string, number[]>();
+  if (verbose) {
+    process.stdout.write("\r" + " ".repeat(40) + "\r");
+  }
 
-  for (const r of results) {
-    if (!categoryScores.has(r.category)) categoryScores.set(r.category, []);
-    categoryScores.get(r.category)!.push(r.score);
-
-    if (!difficultyScores.has(r.difficulty))
-      difficultyScores.set(r.difficulty, []);
-    difficultyScores.get(r.difficulty)!.push(r.score);
-
-    if (verbose) {
+  if (verbose) {
+    for (const r of results) {
+      const ts = r.tool_stats!;
       const status =
         r.score >= 0.99
           ? green("PASS")
           : r.score > 0
             ? yellow("PART")
             : red("FAIL");
+      const total = ts.search_calls + ts.get_image_calls;
+      const imgTag = ts.get_image_calls > 0 ? cyan(" [img]") : "";
       console.log(
-        `  [${status}] ${r.id} (${(r.score * 100).toFixed(1)}%) — ${r.question.slice(0, 60)}...`,
+        `  [${status}] ${r.id} (${(r.score * 100).toFixed(1)}%) — tools: ${total} (search: ${ts.search_calls}, image: ${ts.get_image_calls})${imgTag}`,
       );
     }
+  }
+
+  const categoryScores = new Map<string, number[]>();
+
+  for (const r of results) {
+    if (!categoryScores.has(r.category)) categoryScores.set(r.category, []);
+    categoryScores.get(r.category)!.push(r.score);
   }
 
   const allScores = results.map((r) => r.score);
@@ -180,18 +158,10 @@ export async function runEval(
       10;
   }
 
-  const byDifficulty: Record<string, number> = {};
-  for (const [diff, scores] of [...difficultyScores].sort()) {
-    byDifficulty[diff] =
-      Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 1000) /
-      10;
-  }
-
   const summary: EvalSummary = {
     total_questions: questions.length,
     overall_score: Math.round(overall * 1000) / 10,
     by_category: byCategory,
-    by_difficulty: byDifficulty,
     results,
   };
 
@@ -215,14 +185,29 @@ export async function runEval(
       );
     }
 
-    console.log();
-    console.log("| Difficulty | Score  | Count |");
-    console.log("|-----------|--------|-------|");
-    for (const [diff, avg] of Object.entries(byDifficulty)) {
-      const count = difficultyScores.get(diff)!.length;
-      console.log(
-        `| ${diff.padEnd(9)} | ${avg.toFixed(1).padStart(5)}% | ${String(count).padStart(5)} |`,
-      );
+    // Tool usage summary
+    const withImage = results.filter(
+      (r) => r.tool_stats && r.tool_stats.get_image_calls > 0,
+    );
+    const totalSearchCalls = results.reduce(
+      (sum, r) => sum + (r.tool_stats?.search_calls ?? 0),
+      0,
+    );
+    const totalImageCalls = results.reduce(
+      (sum, r) => sum + (r.tool_stats?.get_image_calls ?? 0),
+      0,
+    );
+
+    console.log(bold("\n--- Tool Usage ---"));
+    console.log(`Total tool calls: ${totalSearchCalls + totalImageCalls}`);
+    console.log(
+      `  search: ${totalSearchCalls}  |  get_image: ${totalImageCalls}`,
+    );
+    console.log(
+      `Questions using get_image: ${withImage.length}/${results.length}`,
+    );
+    if (withImage.length > 0) {
+      console.log(`  IDs: ${withImage.map((r) => r.id).join(", ")}`);
     }
   }
 

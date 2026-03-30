@@ -7,7 +7,7 @@ import {
   bold,
   cyan,
 } from "@visulima/colorize";
-import { retrievalMcp } from "./mcp";
+import { retrievalMcp, createRetrievalMcp } from "./mcp";
 
 function truncateText(text: string): string {
   if (text.length > 100) {
@@ -136,3 +136,13 @@ export const queryOptions: Options = {
     budgetTokens: 1024,
   },
 };
+
+/** Create a fresh Options object with its own MCP server instance (safe for concurrent use). */
+export function createQueryOptions(): Options {
+  return {
+    ...queryOptions,
+    mcpServers: {
+      retrieval: createRetrievalMcp(),
+    },
+  };
+}

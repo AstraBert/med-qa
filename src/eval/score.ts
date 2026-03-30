@@ -2,7 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { EvalQuestion, ScoreResult } from "./types";
 
 function normalize(text: string): string {
-  return text.trim().toLowerCase();
+  return text
+    .replace(/\s*\(.*?\)/g, "") // strip parenthetical suffixes like "(Zofran®)"
+    .replace(/®/g, "")
+    .trim()
+    .toLowerCase();
 }
 
 export function scoreSet(

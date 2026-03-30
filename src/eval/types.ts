@@ -8,7 +8,6 @@ export type AnswerType =
 export type EvalQuestion = {
   id: string;
   category: string;
-  difficulty: string;
   question: string;
   answer_type: AnswerType;
   expected_answer: string | string[] | boolean | number;
@@ -24,21 +23,25 @@ export type ScoreResult = {
   details: Record<string, unknown>;
 };
 
+export type ToolStats = {
+  search_calls: number;
+  get_image_calls: number;
+};
+
 export type EvalResult = {
   id: string;
   category: string;
-  difficulty: string;
   question: string;
   expected: EvalQuestion["expected_answer"];
   actual: unknown;
   score: number;
   details: Record<string, unknown>;
+  tool_stats?: ToolStats;
 };
 
 export type EvalSummary = {
   total_questions: number;
   overall_score: number;
   by_category: Record<string, number>;
-  by_difficulty: Record<string, number>;
   results: EvalResult[];
 };

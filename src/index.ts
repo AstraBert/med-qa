@@ -2,8 +2,8 @@ import { Command } from "commander";
 import { pipeline } from "./processing";
 import { search } from "./search";
 import { Agent, queryOptions } from "./agent";
-import { runEval, getMockAnswers } from "./eval/runner";
-import { bold, green, red, yellow } from "@visulima/colorize";
+import { runEval } from "./eval/runner";
+import { bold, green, yellow, red } from "@visulima/colorize";
 
 const program = new Command();
 
@@ -40,10 +40,9 @@ program
 
 program
   .command("search <query>")
-  .description("Search the store for chunks matching a query")
-  .option("-l, --limit <number>", "maximum number of results", parseInt)
-  .action(async (query: string, opts: { limit?: number }) => {
-    const results = await search(query, { limit: opts.limit });
+  .description("Search the store for the single best chunk matching a query")
+  .action(async (query: string) => {
+    const results = await search(query);
     if (results.length === 0) {
       console.log(red(bold("No results found.")));
       return;
@@ -72,35 +71,19 @@ program
 program
   .command("eval")
   .description(
-    "Run the evaluation suite against mock answer banks to gauge scoring accuracy.",
-  )
-  .option(
-    "--mock <mode>",
-    "Mock answer bank to use: 'perfect' or 'wrong'",
-    "perfect",
+    "Run the evaluation suite against the agent and report scores with tool usage stats.",
   )
   .option("--category <cat>", "Filter questions by category")
-  .option("--difficulty <diff>", "Filter questions by difficulty")
   .option("--output <path>", "Save results to a JSON file")
   .option("--quiet", "Suppress per-question output")
   .action(
     async (opts: {
-      mock: string;
       category?: string;
-      difficulty?: string;
       output?: string;
       quiet?: boolean;
     }) => {
-      if (opts.mock !== "perfect" && opts.mock !== "wrong") {
-        console.log(
-          red(bold("Invalid --mock value. Use 'perfect' or 'wrong'.")),
-        );
-        process.exit(1);
-      }
-      const answers = getMockAnswers(opts.mock);
-      await runEval(answers, {
+      await runEval({
         category: opts.category,
-        difficulty: opts.difficulty,
         verbose: !opts.quiet,
         output: opts.output,
       });
