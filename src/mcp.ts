@@ -1,6 +1,6 @@
 import * as z from "zod";
 import { type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { search } from "./search";
+import { getImageBase64, search } from "./search";
 import { tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
 import fs from "fs/promises";
 
@@ -36,7 +36,7 @@ async function searchTool(
 async function getImageTool(
   input: z.infer<typeof getImageSchema>,
 ): Promise<CallToolResult> {
-  const buffer = await fs.readFile(input.imagePath, { encoding: "base64" });
+  const buffer = await getImageBase64(input.imagePath);
   return {
     content: [
       {

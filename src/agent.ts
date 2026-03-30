@@ -11,7 +11,7 @@ import { retrievalMcp } from "./mcp";
 
 function truncateText(text: string): string {
   if (text.length > 100) {
-    return text.slice(0, 100) + "...";
+    return text.slice(0, 300) + "...";
   }
   return text;
 }
@@ -64,11 +64,15 @@ export class Agent {
                 bold(yellow(`Result for tool: ${block.tool_use_id}`)),
               );
               if (block.content) {
-                for (const b of block.content) {
-                  if (typeof b === "string") {
-                    console.log(truncateText(b));
-                  } else if (b.type == "text") {
-                    console.log(truncateText(b.text));
+                if (typeof block.content === "string") {
+                  console.log(truncateText(block.content));
+                } else {
+                  for (const b of block.content) {
+                    if (typeof b === "string") {
+                      console.log(truncateText(b));
+                    } else if (b.type == "text") {
+                      console.log(truncateText(b.text));
+                    }
                   }
                 }
               }

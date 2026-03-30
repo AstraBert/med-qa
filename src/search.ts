@@ -42,11 +42,32 @@ async function tableSearch(
   const searchResults = [];
   for (const result of results) {
     const text = result.text as string;
-    const path = result.screenshot_path as string;
+    const path = result.id as string;
     const searchResult: SearchResult = { screenshotPath: path, text };
     searchResults.push(searchResult);
   }
   return searchResults;
+}
+
+export async function getImageBase64(path: string): Promise<string> {
+  const db = await connectDb();
+  const exists = await tableExists(db);
+  if (!exists) {
+    throw new Error("Table does not exist, cannot search yet");
+  }
+  const tbl = await db.openTable(TABLE_NAME);
+  const item = await tbl
+    .query()
+    .where(`id = '${path}'`)
+    .select(["image"])
+    .limit(1)
+    .toArray();
+  if (item.length != 1) {
+    throw new Error("Expected to retrieve exactly one image");
+  }
+  const arr = item[0]!.image as Uint8Array;
+  const buf = Buffer.from(arr);
+  return buf.toString("base64");
 }
 
 export async function search(
