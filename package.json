@@ -7,7 +7,6 @@
     "process": "bun run src/index.ts process",
     "search": "bun run src/index.ts search",
     "agent": "bun run src/index.ts agent",
-    "eval": "bun run src/index.ts eval",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "lint": "eslint src/",
@@ -27,7 +26,6 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.86",
-    "@anthropic-ai/sdk": "^0.80.0",
     "@chonkiejs/core": "^0.0.9",
     "@google/genai": "^1.47.0",
     "@lancedb/lancedb": "^0.27.1",

@@ -94,31 +94,6 @@ To resume a session:
 bun run agent "Follow-up question" --resume <session-id>
 ```
 
-### Evaluation
-
-Run the evaluation suite. Each question is sent to the agent, and the response is scored against expected answers. Tool usage (search and image calls) is tracked per question.
-
-```bash
-bun run eval
-```
-
-Options:
-
-| Flag                    | Description                    |
-| ----------------------- | ------------------------------ |
-| `--category <category>` | Filter questions by category.  |
-| `--output <path>`       | Save results to a JSON file.   |
-| `--quiet`               | Suppress per-question output.  |
-
-Example:
-
-```bash
-bun run eval --output results.json
-bun run eval --category aggregation_counting
-```
-
-The eval suite uses 20 questions from `src/eval/gold.json` across 7 categories (`direct_lookup`, `synonym_paraphrase`, `brand_generic_resolution`, `cross_category_reasoning`, `negation_absence`, `aggregation_counting`, `disambiguation`). Answers are scored with type-specific strategies: set F1 (with alias resolution), exact match, boolean, numeric, and free-text via Claude Sonnet as LLM judge. Per-question output includes tool call counts and flags questions where the agent used the image fallback tool (`[img]`).
-
 ## How it works
 
 1. **Processing** — `@llamaindex/liteparse` parses the document and produces per-page text and screenshots. Text is chunked with `@chonkiejs/core` using a recursive strategy (max 4096 characters per chunk). Each chunk is embedded via the Gemini embedding API (3072 dimensions) and stored in a local LanceDB table with an HNSW-SQ index.

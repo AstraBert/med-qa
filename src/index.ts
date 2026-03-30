@@ -2,8 +2,7 @@ import { Command } from "commander";
 import { pipeline } from "./processing";
 import { search } from "./search";
 import { Agent, queryOptions } from "./agent";
-import { runEval } from "./eval/runner";
-import { bold, green, yellow, red } from "@visulima/colorize";
+import { bold, green, red, yellow } from "@visulima/colorize";
 
 const program = new Command();
 
@@ -40,9 +39,10 @@ program
 
 program
   .command("search <query>")
-  .description("Search the store for the single best chunk matching a query")
-  .action(async (query: string) => {
-    const results = await search(query);
+  .description("Search the store for chunks matching a query")
+  .option("-l, --limit <number>", "maximum number of results", parseInt)
+  .action(async (query: string, opts: { limit?: number }) => {
+    const results = await search(query, { limit: opts.limit });
     if (results.length === 0) {
       console.log(red(bold("No results found.")));
       return;
@@ -67,27 +67,5 @@ program
     const agent = new Agent(queryOptions, { resume: opts.resume });
     await agent.run(query);
   });
-
-program
-  .command("eval")
-  .description(
-    "Run the evaluation suite against the agent and report scores with tool usage stats.",
-  )
-  .option("--category <cat>", "Filter questions by category")
-  .option("--output <path>", "Save results to a JSON file")
-  .option("--quiet", "Suppress per-question output")
-  .action(
-    async (opts: {
-      category?: string;
-      output?: string;
-      quiet?: boolean;
-    }) => {
-      await runEval({
-        category: opts.category,
-        verbose: !opts.quiet,
-        output: opts.output,
-      });
-    },
-  );
 
 program.parseAsync();
