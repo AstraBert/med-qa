@@ -94,6 +94,34 @@ To resume a session:
 bun run agent "Follow-up question" --resume <session-id>
 ```
 
+### Eval
+
+Run the evaluation suite against mock answer banks to gauge scoring accuracy:
+
+```bash
+bun run eval
+```
+
+Options:
+
+| Flag                        | Description                                              |
+| --------------------------- | -------------------------------------------------------- |
+| `--mock <mode>`             | Mock answer bank to use: `perfect` or `wrong`. Defaults to `perfect`. |
+| `--category <category>`     | Filter questions by category.                            |
+| `--difficulty <difficulty>` | Filter questions by difficulty.                          |
+| `--output <path>`           | Save results to a JSON file.                             |
+| `--quiet`                   | Suppress per-question output.                            |
+
+Example:
+
+```bash
+bun run eval --mock perfect
+bun run eval --mock wrong --category synonym_paraphrase
+bun run eval --mock perfect --output results.json
+```
+
+The eval suite uses 20 questions from `evals/medication_eval.json` across 7 categories (`direct_lookup`, `synonym_paraphrase`, `brand_generic_resolution`, `cross_category_reasoning`, `negation_absence`, `aggregation_counting`, `disambiguation`) and 3 difficulty levels. Answers are scored with type-specific strategies: set F1 (with alias resolution), exact match, boolean, numeric, and free-text via Claude Sonnet as LLM judge (falls back to word-overlap heuristic if no `ANTHROPIC_API_KEY` is set).
+
 ## How it works
 
 1. **Processing** — `@llamaindex/liteparse` parses the document and produces per-page text and screenshots. Text is chunked with `@chonkiejs/core` using a recursive strategy (max 4096 characters per chunk). Each chunk is embedded via the Gemini embedding API (3072 dimensions) and stored in a local LanceDB table with an HNSW-SQ index.

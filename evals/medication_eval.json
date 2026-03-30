@@ -1,0 +1,270 @@
+[
+  {
+    "id": "DL-01",
+    "category": "direct_lookup",
+    "difficulty": "easy",
+    "question": "What are the side effects listed for Omeprazole?",
+    "answer_type": "set",
+    "expected_answer": [
+      "Constipation",
+      "Diarrhea",
+      "Headache",
+      "Throwing up",
+      "Upset stomach"
+    ],
+    "scoring": "Set match (order-insensitive). Full marks if all 5 present and no extras. Partial credit proportional to F1.",
+    "reasoning": "Agent must know Omeprazole is in the Heartburn or Reflux category and return the category-level side effects. The PDF lists side effects per category, not per individual drug."
+  },
+  {
+    "id": "DL-02",
+    "category": "direct_lookup",
+    "difficulty": "easy",
+    "question": "What category does Warfarin fall under?",
+    "answer_type": "free_text",
+    "expected_answer": "Blood Thinner/Blood Clot Treatment",
+    "scoring_rubric": {
+      "full_marks": "Names the category 'Blood Thinner/Blood Clot Treatment' or a close paraphrase (e.g., 'blood thinners', 'blood clot treatment')",
+      "half_marks": "Mentions blood thinning or clot treatment but is vague or partially correct",
+      "zero_marks": "Names a wrong category or gives an unrelated answer"
+    },
+    "scoring": "LLM-as-judge against rubric. Accept the exact category name or any reasonable paraphrase.",
+    "reasoning": "Warfarin (Coumadin) is one of 8 drugs in this category. Agent must resolve the drug to its category."
+  },
+  {
+    "id": "DL-03",
+    "category": "direct_lookup",
+    "difficulty": "easy",
+    "question": "List all medications used for heart rhythm problems.",
+    "answer_type": "set",
+    "expected_answer": ["Amiodarone", "Digoxin", "Propranalol"],
+    "acceptable_aliases": {
+      "Amiodarone": ["Pacerone", "Cordarone"],
+      "Digoxin": ["Digitek", "Lanoxin"],
+      "Propranalol": ["Inderal"]
+    },
+    "scoring": "Set match. Accept brand names as aliases. Full marks if all 3 present.",
+    "reasoning": "Straightforward retrieval but tests completeness. Small category (only 3 drugs)."
+  },
+  {
+    "id": "SYN-01",
+    "category": "synonym_paraphrase",
+    "difficulty": "medium",
+    "question": "What medications can I take for nausea?",
+    "answer_type": "set",
+    "expected_answer": ["Ondansetron", "Promethazine", "Scopolamine"],
+    "acceptable_aliases": {
+      "Ondansetron": ["Zofran"],
+      "Promethazine": ["Phenergan"]
+    },
+    "scoring": "Set match. Accept brand names. Full marks for all 3.",
+    "reasoning": "'Nausea' does not appear in the PDF. Agent must map it to 'Queasiness or Throwing Up' category."
+  },
+  {
+    "id": "SYN-02",
+    "category": "synonym_paraphrase",
+    "difficulty": "medium",
+    "question": "Which drugs for high blood pressure can cause a cough?",
+    "answer_type": "set",
+    "expected_answer": [
+      "Benzapril",
+      "Captopril",
+      "Enalapril",
+      "Lisinopril",
+      "Quinapril",
+      "Ramipril",
+      "Candesartan",
+      "Irbesartan",
+      "Olmesartan",
+      "Valsartan",
+      "Losartan",
+      "Furosemide",
+      "Hydrochlorothiazide",
+      "Spironolactone"
+    ],
+    "acceptable_aliases": {
+      "Candesartan": ["Atacand"],
+      "Irbesartan": ["Avapro"],
+      "Olmesartan": ["Benicar"],
+      "Valsartan": ["Diovan"],
+      "Losartan": ["Cozarr"],
+      "Furosemide": ["Lasix"]
+    },
+    "scoring": "Partial credit proportional to recall. Must NOT include drugs from 'Lowers Blood Pressure and Heart Rate' category (which does NOT list cough). Precision penalty for incorrect inclusions.",
+    "reasoning": "(1) 'High blood pressure' maps to 'Lowers Blood Pressure' (synonym). (2) Must distinguish from 'Lowers Blood Pressure and Heart Rate' — similar name but different category without cough. (3) Sub-headers (ACE Inhibitors, ARBs, Diuretics) and comma-separated generics without brand names."
+  },
+  {
+    "id": "SYN-03",
+    "category": "synonym_paraphrase",
+    "difficulty": "medium",
+    "question": "Can vomiting be a side effect of cholesterol medication?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. 'Throwing up' (the PDF's term for vomiting) is NOT listed under Lowers Cholesterol. Side effects are: Headache, Muscle pain, Upset stomach.",
+    "reasoning": "'Vomiting' must be resolved to 'Throwing up' (PDF's term), then the agent must check the Lowers Cholesterol side effects and confirm absence."
+  },
+  {
+    "id": "SYN-04",
+    "category": "synonym_paraphrase",
+    "difficulty": "medium",
+    "question": "What are the side effects of medications used to treat acid reflux?",
+    "answer_type": "set",
+    "expected_answer": [
+      "Constipation",
+      "Diarrhea",
+      "Headache",
+      "Throwing up",
+      "Upset stomach"
+    ],
+    "scoring": "Set match (order-insensitive). Full marks if all 5 present and no extras.",
+    "reasoning": "'Acid reflux' does not appear in the PDF. Agent must map it to 'Heartburn or Reflux' and return the correct side effects."
+  },
+  {
+    "id": "BG-01",
+    "category": "brand_generic_resolution",
+    "difficulty": "medium",
+    "question": "What is Xanax used for?",
+    "answer_type": "free_text",
+    "expected_answer": "Calms Nerves or Makes You Sleepy",
+    "scoring_rubric": {
+      "full_marks": "Names the category 'Calms Nerves or Makes You Sleepy' or a close paraphrase capturing both calming/anxiety AND sedation/sleep aspects (e.g., 'anxiety and sleep', 'sedation and calming nerves')",
+      "half_marks": "Captures only one aspect (e.g., 'anxiety' alone or 'sleep' alone) or is vague",
+      "zero_marks": "Names a wrong category or gives an unrelated answer"
+    },
+    "scoring": "LLM-as-judge against rubric. Accept the exact category name or any reasonable paraphrase.",
+    "reasoning": "Must resolve brand name 'Xanax' to generic 'Alprazolam' and then to its category."
+  },
+  {
+    "id": "BG-02",
+    "category": "brand_generic_resolution",
+    "difficulty": "medium",
+    "question": "Does Tylenol have the same side effects as Motrin?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Boolean must be correct. Bonus for noting they share zero overlapping side effects. Tylenol (Pain Relief) SE: Confusion, Constipation, Dizziness, Drowsiness, Dry mouth, Queasiness, Rash, Throwing up. Motrin (Inflammation) SE: Risk of bleeding, Sleeplessness, Swelling, Upset stomach.",
+    "reasoning": "Two brand names from different categories. Zero overlap in side effects — a strong 'no'. Agent must resolve both brand names to their categories and compare."
+  },
+  {
+    "id": "BG-03",
+    "category": "brand_generic_resolution",
+    "difficulty": "medium",
+    "question": "What's the brand name for Morphine?",
+    "answer_type": "free_text",
+    "expected_answer": "No brand name listed",
+    "scoring_rubric": {
+      "full_marks": "Clearly states that no brand name is listed/provided in the chart (e.g., 'None listed', 'N/A', 'The chart does not list a brand name for Morphine')",
+      "half_marks": "Ambiguous or hedging answer that neither confirms nor denies",
+      "zero_marks": "Provides an actual brand name (e.g., MS Contin, Kadian) — this is a hallucination and must score 0"
+    },
+    "scoring": "LLM-as-judge against rubric. Must indicate absence, not hallucinate a brand name.",
+    "reasoning": "Edge case: Morphine has no brand name in the PDF. Several drugs lack brand names (Morphine, Aspirin, Heparin, Scopolamine, etc.). Agent must NOT fabricate one from general knowledge."
+  },
+  {
+    "id": "XC-01",
+    "category": "cross_category_reasoning",
+    "difficulty": "hard",
+    "question": "Which side effects are shared between pain relievers and heartburn medications?",
+    "answer_type": "set",
+    "expected_answer": ["Constipation", "Throwing up"],
+    "scoring": "Set match. Pain Relief SE: {Confusion, Constipation, Dizziness, Drowsiness, Dry mouth, Queasiness, Rash, Throwing up}. Heartburn SE: {Constipation, Diarrhea, Headache, Throwing up, Upset stomach}. Intersection = {Constipation, Throwing up}.",
+    "reasoning": "Must retrieve both side effect lists and compute intersection. Two categories with large side effect lists but only 2 overlapping items."
+  },
+  {
+    "id": "XC-02",
+    "category": "cross_category_reasoning",
+    "difficulty": "hard",
+    "question": "A patient takes both Lisinopril and Tramadol. Which side effects are listed for both of these medications?",
+    "answer_type": "set",
+    "expected_answer": ["Dizziness"],
+    "scoring": "Set match. Lisinopril (Lowers BP) SE: {Cough, Dizziness, Lightheadedness}. Tramadol (Pain Relief) SE: {Confusion, Constipation, Dizziness, Drowsiness, Dry mouth, Queasiness, Rash, Throwing up}. Only Dizziness overlaps.",
+    "reasoning": "Must resolve both drug names to their categories, get side effects, and compute intersection. Only one side effect overlaps."
+  },
+  {
+    "id": "XC-03",
+    "category": "cross_category_reasoning",
+    "difficulty": "hard",
+    "question": "Do blood thinners and cholesterol medications share any side effects?",
+    "answer_type": "set",
+    "expected_answer": ["Upset stomach"],
+    "scoring": "Set match. Blood Thinner SE: {Blood in stool or urine, Bruising, Risk of bleeding, Upset stomach}. Cholesterol SE: {Headache, Muscle pain, Upset stomach}. Intersection = {Upset stomach}.",
+    "reasoning": "Must retrieve side effects for two medication groups using colloquial terms ('blood thinners', 'cholesterol medications') and compute intersection."
+  },
+  {
+    "id": "NA-01",
+    "category": "negation_absence",
+    "difficulty": "hard",
+    "question": "Which pain relief medications do NOT cause drowsiness?",
+    "answer_type": "set",
+    "expected_answer": [],
+    "scoring": "Must return empty set or state that all pain relief medications share the same side effect list (which includes Drowsiness). Penalize if agent fabricates per-drug distinctions not present in the PDF.",
+    "reasoning": "The PDF lists side effects at the category level, not per individual drug. All 7 pain relief medications share the same side effects. Agent must understand this structural property rather than inventing per-drug differences."
+  },
+  {
+    "id": "NA-02",
+    "category": "negation_absence",
+    "difficulty": "hard",
+    "question": "Is dizziness listed as a side effect of any antibiotic in the chart?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. Antibiotic SE: {Diarrhea, Headache, Rash/flushing, Throwing up, Upset stomach}. Dizziness is NOT listed.",
+    "reasoning": "Dizziness appears in 6 of 11 categories, so an agent relying on general medical knowledge rather than the PDF's specific data would likely answer incorrectly."
+  },
+  {
+    "id": "NA-03",
+    "category": "negation_absence",
+    "difficulty": "hard",
+    "question": "Is constipation listed as a side effect of any cholesterol medication?",
+    "answer_type": "boolean",
+    "expected_answer": false,
+    "scoring": "Exact match. Lowers Cholesterol SE: {Headache, Muscle pain, Upset stomach}. Constipation is NOT listed.",
+    "reasoning": "Agent must not confuse 'Upset stomach' with 'Constipation'. Both are GI-related but distinct in the PDF."
+  },
+  {
+    "id": "AG-01",
+    "category": "aggregation_counting",
+    "difficulty": "hard",
+    "question": "What is the most commonly listed side effect across all medication categories?",
+    "answer_type": "set",
+    "expected_answer": ["Headache", "Upset stomach"],
+    "scoring": "Must identify both (tied at 7 of 11 categories each). Partial credit for one. Headache in: Queasiness, Heartburn, Cholesterol, Heart Rhythm, BP+HR, Antibiotic, Calms Nerves (7). Upset stomach in: Heartburn, Cholesterol, Blood Thinner, Heart Rhythm, BP+HR, Antibiotic, Inflammation (7). Next: Dizziness (6), Throwing up (5).",
+    "reasoning": "Requires exhaustive aggregation across all 11 categories and recognizing a tie. Most agents will return only one."
+  },
+  {
+    "id": "AG-02",
+    "category": "aggregation_counting",
+    "difficulty": "hard",
+    "question": "How many different medications are listed under the 'Lowers Blood Pressure' category?",
+    "answer_type": "number",
+    "expected_answer": 14,
+    "scoring": "Exact number match. ACE Inhibitors/ARBs: Benzapril, Captopril, Enalapril, Lisinopril, Quinapril, Ramipril (6) + Candesartan, Irbesartan, Olmesartan, Valsartan, Losartan (5) = 11. Diuretics: Furosemide, Hydrochlorothiazide, Spironolactone = 3. Total = 14.",
+    "reasoning": "(1) Sub-headers (ACE Inhibitors, ARBs, Diuretics) within the category. (2) Comma-separated generics without individual brand names. (3) Must NOT confuse with 'Lowers Blood Pressure and Heart Rate' category."
+  },
+  {
+    "id": "DIS-01",
+    "category": "disambiguation",
+    "difficulty": "hard",
+    "question": "Is 'Queasiness' a reason for taking medication, a side effect, or both?",
+    "answer_type": "free_text",
+    "expected_answer": "Both. 'Queasiness or Throwing Up' is listed as a reason for medicine (category with Ondansetron, Promethazine, Scopolamine), AND 'Queasiness' appears as a side effect of Pain Relief medications.",
+    "scoring_rubric": {
+      "full_marks": "Identifies BOTH roles with correct context (which category treats it, which category lists it as side effect)",
+      "half_marks": "Identifies only one role correctly",
+      "zero_marks": "Incorrect or only says one without acknowledging the other"
+    },
+    "scoring": "LLM-as-judge against rubric. Must identify BOTH roles.",
+    "reasoning": "The word 'Queasiness' appears in two different columns of the table — as part of a category name (Reason for Medicine) and as a side effect value. Agent must reason about column semantics."
+  },
+  {
+    "id": "DIS-02",
+    "category": "disambiguation",
+    "difficulty": "hard",
+    "question": "The chart lists 'Throwing up' under both 'Reason for Medicine' and 'Side Effects.' Which specific medications are listed to treat throwing up?",
+    "answer_type": "set",
+    "expected_answer": ["Ondansetron", "Promethazine", "Scopolamine"],
+    "acceptable_aliases": {
+      "Ondansetron": ["Zofran"],
+      "Promethazine": ["Phenergan"]
+    },
+    "scoring": "Set match. Accept brand names. Full marks for all 3. Must NOT include medications that list 'Throwing up' as a side effect.",
+    "reasoning": "Agent must distinguish between 'Throwing up' as a reason for medicine (the 'Queasiness or Throwing Up' category) vs. 'Throwing up' appearing as a side effect in 5 other categories, and return only the medications that treat it."
+  }
+]
