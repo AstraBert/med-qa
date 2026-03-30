@@ -58,14 +58,14 @@ bun run search "<query>"
 
 Options:
 
-| Flag                   | Description                          |
-| ---------------------- | ------------------------------------ |
-| `-l, --limit <number>` | Maximum number of results to return. |
+| Flag                      | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| `-c, --chunk-limit <number>` | Number of chunks to return. Defaults to `1`.      |
 
 Example:
 
 ```bash
-bun run search "contraindications for ibuprofen" --limit 5
+bun run search "contraindications for ibuprofen" --chunk-limit 5
 ```
 
 ### Agent
