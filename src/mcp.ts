@@ -2,7 +2,7 @@ import * as z from "zod";
 import { type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { getImageBase64, search } from "./search";
 import { tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
-import fs from "fs/promises";
+
 
 export const getImageSchemaShape = {
   imagePath: z.string().describe("Path of the image to read"),
@@ -10,12 +10,6 @@ export const getImageSchemaShape = {
 
 export const searchSchemaShape = {
   query: z.string().describe("Search query"),
-  limit: z
-    .number()
-    .optional()
-    .describe(
-      "Maximum number of returned results. Defaults to 1 if not provided.",
-    ),
 };
 
 export const searchSchema = z.object(searchSchemaShape);
@@ -24,7 +18,7 @@ export const getImageSchema = z.object(getImageSchemaShape);
 async function searchTool(
   input: z.infer<typeof searchSchema>,
 ): Promise<CallToolResult> {
-  const results = await search(input.query, { limit: input.limit });
+  const results = await search(input.query, {});
   const contents: { type: "text"; text: string }[] = [];
   for (const result of results) {
     const text = `FULL PAGE SCREENSHOT PATH: ${result.screenshotPath}\n\nCONTENT:\n${result.text}`;
@@ -67,3 +61,11 @@ export const retrievalMcp = createSdkMcpServer({
   version: "1.0.0",
   tools: [mcpSearchTool, mcpGetImageTool],
 });
+
+export function createRetrievalMcp() {
+  return createSdkMcpServer({
+    name: "retrieval",
+    version: "1.0.0",
+    tools: [mcpSearchTool, mcpGetImageTool],
+  });
+}
