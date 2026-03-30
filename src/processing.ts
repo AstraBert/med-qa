@@ -147,7 +147,7 @@ async function upsertData(
 ): Promise<void> {
   const schema = new arrow.Schema([
     new arrow.Field("id", new arrow.Utf8()),
-    new arrow.Field("screenshot_path", new arrow.Utf8()),
+    new arrow.Field("image", new arrow.Binary()),
     new arrow.Field(
       "vector",
       new arrow.FixedSizeList(
@@ -161,9 +161,10 @@ async function upsertData(
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i]!;
     const embedding = embeddings[i]!;
+    const content = await fs.readFile(page.screenshotPath);
     const d = {
       id: page.screenshotPath,
-      screenshot_path: page.screenshotPath,
+      image: Buffer.from(content),
       vector: embedding,
       text: page.text,
     };
