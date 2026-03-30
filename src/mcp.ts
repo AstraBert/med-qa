@@ -10,6 +10,14 @@ export const getImageSchemaShape = {
 
 export const searchSchemaShape = {
   query: z.string().describe("Search query"),
+  chunkLimit: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe(
+      "Maximum number of text chunks to return. Defaults to 1. Increase when the answer may span multiple sections of the document.",
+    ),
 };
 
 export const searchSchema = z.object(searchSchemaShape);
@@ -18,7 +26,7 @@ export const getImageSchema = z.object(getImageSchemaShape);
 async function searchTool(
   input: z.infer<typeof searchSchema>,
 ): Promise<CallToolResult> {
-  const results = await search(input.query, {});
+  const results = await search(input.query, input.chunkLimit);
   const contents: { type: "text"; text: string }[] = [];
   for (const result of results) {
     const text = `FULL PAGE SCREENSHOT PATH: ${result.screenshotPath}\n\nCONTENT:\n${result.text}`;

@@ -40,9 +40,11 @@ program
 
 program
   .command("search <query>")
-  .description("Search the store for the single best chunk matching a query")
-  .action(async (query: string) => {
-    const results = await search(query);
+  .description("Search the store for the top matching chunks for a query")
+  .option("-c, --chunk-limit <number>", "Number of chunks to return", "1")
+  .action(async (query: string, opts: { chunkLimit: string }) => {
+    const chunkLimit = parseInt(opts.chunkLimit, 10);
+    const results = await search(query, chunkLimit);
     if (results.length === 0) {
       console.log(red(bold("No results found.")));
       return;

@@ -7,7 +7,7 @@ import {
 } from "./processing";
 import { GoogleGenAI } from "@google/genai";
 
-const SEARCH_LIMIT = 1;
+const DEFAULT_CHUNK_LIMIT = 1;
 
 type SearchResult = {
   text: string;
@@ -27,6 +27,7 @@ async function embedQuery(query: string): Promise<Array<number>> {
 
 async function tableSearch(
   embedding: Array<number>,
+  limit: number,
 ): Promise<Array<SearchResult>> {
   const db = await connectDb();
   const exists = await tableExists(db);
@@ -36,7 +37,7 @@ async function tableSearch(
   const tbl = await db.openTable(TABLE_NAME);
   const results = await tbl
     .search(embedding, "vector")
-    .limit(SEARCH_LIMIT)
+    .limit(limit)
     .toArray();
   const searchResults = [];
   for (const result of results) {
@@ -69,8 +70,11 @@ export async function getImageBase64(path: string): Promise<string> {
   return buf.toString("base64");
 }
 
-export async function search(query: string): Promise<Array<SearchResult>> {
+export async function search(
+  query: string,
+  chunkLimit: number = DEFAULT_CHUNK_LIMIT,
+): Promise<Array<SearchResult>> {
   const embedding = await embedQuery(query);
-  const results = await tableSearch(embedding);
+  const results = await tableSearch(embedding, chunkLimit);
   return results;
 }
