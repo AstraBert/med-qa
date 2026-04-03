@@ -1,6 +1,6 @@
 # med-qa
 
-A local CLI for ingesting, searching, and querying medical factsheets using vector embeddings and an AI-backed agent.
+An open source, local agent QA workflow for ingesting, searching, and querying a medical factsheet using vector embeddings.
 
 Documents are parsed and converted to page-level screenshots by [LiteParse](https://github.com/run-llama/liteparse), chunked with [Chonkie](https://chonkie.ai), embedded with [Google's Gemini embedding model](https://ai.google.dev/gemini-api/docs/embeddings#multimodal), and stored in a local [LanceDB](https://lancedb.com) vector database. A [Claude](https://platform.claude.com/docs/en/agent-sdk/overview)-backed agent can then answer questions against this knowledge base using a two-step retrieval strategy: text search first, with optional image lookup for visual context grounding if the text-base information is insufficient or ambiguous.
 
@@ -127,13 +127,54 @@ The eval suite uses 20 questions from `src/eval/gold.json` across 7 categories (
 
 3. **Agent** — A Claude agent is initialized with a retrieval MCP server that exposes two tools: `search` (vector search) and `get_image` (reads a screenshot by path and returns it as a base64 image). The agent uses extended thinking and is instructed to rely only on retrieved content rather than prior knowledge.
 
+## Representative results
+
+The agent QA results below are from the [evaluation suite](./src/eval/README.md), built using the Claude Agent SDK
+and the Sonnet 4.6 model. Depending on the model and harness you use, results may vary.
+
+We designed a 20-question eval suite spanning seven categories. Each question targets a specific failure mode — synonym resolution, column disambiguation, cross-category reasoning, and so on. Answer types include set matching (scored by F1), boolean (exact match), numeric (exact match), and free text (LLM-as-judge with a rubric).
+
+### Results by Category
+
+| Category                 | Score  | Questions |
+|--------------------------|--------|-----------|
+| cross_category_reasoning | 100.0% | 3         |
+| direct_lookup            | 100.0% | 2         |
+| disambiguation           | 100.0% | 2         |
+| negation_absence         | 100.0% | 3         |
+| synonym_paraphrase       |  97.0% | 4         |
+| brand_generic_resolution |  66.7% | 3         |
+| aggregation_counting     |  33.3% | 3         |
+| **Overall**              | **84.4%** | **20** |
+
+### Per-Question Results
+
+| ID     | Category                 | Score  | Search Calls | Image Calls |
+|--------|--------------------------|--------|--------------|-------------|
+| DL-02  | direct_lookup            | 100.0% | 4            | 1           |
+| DL-03  | direct_lookup            | 100.0% | 5            | 1           |
+| SYN-01 | synonym_paraphrase       | 100.0% | 1            | 0           |
+| SYN-02 | synonym_paraphrase       |  88.0% | 1            | 0           |
+| SYN-03 | synonym_paraphrase       | 100.0% | 1            | 0           |
+| SYN-04 | synonym_paraphrase       | 100.0% | 1            | 0           |
+| BG-01  | brand_generic_resolution |   0.0% | 2            | 1           |
+| BG-02  | brand_generic_resolution | 100.0% | 3            | 1           |
+| BG-03  | brand_generic_resolution | 100.0% | 1            | 0           |
+| XC-01  | cross_category_reasoning | 100.0% | 1            | 1           |
+| XC-02  | cross_category_reasoning | 100.0% | 7            | 2           |
+| XC-03  | cross_category_reasoning | 100.0% | 2            | 0           |
+| NA-01  | negation_absence         | 100.0% | 2            | 1           |
+| NA-02  | negation_absence         | 100.0% | 3            | 1           |
+| NA-03  | negation_absence         | 100.0% | 1            | 0           |
+| AG-01  | aggregation_counting     |   0.0% | 7            | 1           |
+| AG-02  | aggregation_counting     | 100.0% | 8            | 1           |
+| AG-03  | aggregation_counting     |   0.0% | 2            | 1           |
+| DIS-01 | disambiguation           | 100.0% | 1            | 0           |
+| DIS-02 | disambiguation           | 100.0% | 1            | 0           |
+
 ## Development
 
 ```sh
 bun run lint # run eslint, use lint:fix to fix errors
 bun run format # run prettier, use format:fix to fix errors
 ```
-
-## License
-
-[MIT](./LICENSE)
