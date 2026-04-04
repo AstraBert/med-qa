@@ -96,7 +96,7 @@ bun run agent "Follow-up question" --resume <session-id>
 
 ### Evaluation
 
-Run the evaluation suite. Each question is sent to the agent, and the response is scored against expected answers. Tool usage (search and image calls) is tracked per question.
+Run the [evaluation suite](https://github.com/run-llama/llamaindex-lancedb-medqa/tree/main/src/eval). Each question is sent to the agent, and the response is scored against expected answers. Tool usage (search and image calls) is tracked per question.
 
 ```bash
 bun run eval
